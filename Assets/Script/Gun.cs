@@ -1,4 +1,5 @@
 using Fusion;
+using System.Collections;
 using UnityEngine;
 
 public class Gun : NetworkBehaviour
@@ -6,20 +7,35 @@ public class Gun : NetworkBehaviour
     public GameObject bulletPrefab;
     public Transform firePoint; // Vị trí đầu nòng súng
     public float bulletSpeed = 20f;
-
-    private Camera mainCamera;
+    public Camera playerCamera; // Camera của người chơi
+    public GameObject crosshairUI; // Crosshair nằm giữa màn hình
     public Animator animator;
+
+    private bool cursorVisible = false;
 
     void Start()
     {
-        mainCamera = Camera.main; // Lấy camera chính
+        playerCamera = Camera.main;
+        if (Object.HasInputAuthority)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     void Update()
     {
-        if (!Object.HasInputAuthority) return; // Chỉ chạy cho player sở hữu
+        if (!Object.HasInputAuthority) return;
 
-        if (Input.GetMouseButtonDown(0)) // Nhấn chuột trái
+        // Bật/tắt con trỏ khi nhấn phím L
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            cursorVisible = !cursorVisible;
+            Cursor.visible = cursorVisible;
+            Cursor.lockState = cursorVisible ? CursorLockMode.None : CursorLockMode.Locked;
+        }
+
+        if (Input.GetMouseButtonDown(0))
         {
             Shoot();
         }
@@ -27,26 +43,34 @@ public class Gun : NetworkBehaviour
 
     void Shoot()
     {
-        // Kích hoạt animation bắn
+        // Gọi animation bắn local
         animator.SetTrigger("Shoot");
+        Delay(1f);
+        RPC_PlayShootAnimation(); // Gọi animation cho mọi client
 
-        // Gửi RPC để tất cả player thấy animation bắn
-        RPC_PlayShootAnimation();
+        // Tính ray từ giữa màn hình (tâm của canvas)
+        Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0f);
+        Ray ray = playerCamera.ScreenPointToRay(screenCenter);
 
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        Vector3 shootDirection;
+
+        // Raycast xác định hướng đạn
         if (Physics.Raycast(ray, out RaycastHit hit, 100f))
         {
-            Vector3 shootDirection = (hit.point - firePoint.position).normalized;
-
-            // Gửi RPC để tất cả người chơi đều thấy viên đạn bắn ra
-            RPC_SpawnBullet(firePoint.position, shootDirection);
+            shootDirection = (hit.point - firePoint.position).normalized;
         }
+        else
+        {
+            shootDirection = ray.direction;
+        }
+
+        // Gửi RPC spawn đạn
+        RPC_SpawnBullet(firePoint.position, shootDirection);
     }
 
     [Rpc(RpcSources.InputAuthority, RpcTargets.All)]
     private void RPC_SpawnBullet(Vector3 spawnPosition, Vector3 direction)
     {
-        // Tạo đạn trên mạng
         Runner.Spawn(bulletPrefab, spawnPosition, Quaternion.LookRotation(direction), Object.InputAuthority, (runner, obj) =>
         {
             obj.GetComponent<Bullet>().Initialize(direction);
@@ -56,9 +80,17 @@ public class Gun : NetworkBehaviour
     [Rpc(RpcSources.InputAuthority, RpcTargets.All)]
     public void RPC_PlayShootAnimation()
     {
-        animator.SetTrigger("Shoot"); // Gọi animation trên tất cả client
+        animator.SetTrigger("Shoot");
+    }
+
+    private IEnumerator Delay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        // Bắn đạn sau khi animation chạy 1 giây
     }
 }
+
 
 
 
