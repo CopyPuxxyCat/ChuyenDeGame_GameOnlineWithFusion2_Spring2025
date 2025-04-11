@@ -28,6 +28,9 @@ public class PlayerSpawner : SimulationBehaviour, IPlayerJoined
                 Runner.Spawn(playerPrefab, new Vector3(0, 1, 0), Quaternion.identity, player, (runner, obj) =>
                 {
                     spawnedPlayers[player] = obj; // Lưu thông tin người chơi đã spawn
+
+                    // Gán LocalPlayer khi player local spawn xong
+                    GameManagephoton.instance.LocalPlayer = obj;
                 });
             }
             else

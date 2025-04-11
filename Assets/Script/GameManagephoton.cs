@@ -1,3 +1,4 @@
+using Fusion;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,15 +11,20 @@ public class GameManagephoton : MonoBehaviour
     public GameObject SelectedCharacter;
 
     public string ShowName = "Name";
-    void Start()
+
+    public NetworkObject LocalPlayer;
+    void Awake()
     {
-        instance = this;
-        DontDestroyOnLoad(this);
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(this);
+        }
+        else
+        {
+            Destroy(gameObject); // tránh duplicate nếu có nhiều GameManager
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+
 }
