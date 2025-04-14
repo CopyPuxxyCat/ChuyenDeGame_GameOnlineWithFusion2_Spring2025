@@ -32,6 +32,7 @@ public class PlayerSpawner : SimulationBehaviour, IPlayerJoined
                     // Gán LocalPlayer khi player local spawn xong
                     GameManagephoton.instance.LocalPlayer = obj;
                 });
+                
             }
             else
             {

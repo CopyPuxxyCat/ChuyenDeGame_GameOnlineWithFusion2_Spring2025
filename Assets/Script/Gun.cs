@@ -16,6 +16,7 @@ public class Gun : NetworkBehaviour
     void Start()
     {
         playerCamera = Camera.main;
+
         if (Object.HasInputAuthority)
         {
             Cursor.lockState = CursorLockMode.Locked;
@@ -74,6 +75,8 @@ public class Gun : NetworkBehaviour
         Runner.Spawn(bulletPrefab, spawnPosition, Quaternion.LookRotation(direction), Object.InputAuthority, (runner, obj) =>
         {
             obj.GetComponent<Bullet>().Initialize(direction);
+            var bullet = obj.GetComponent<Bullet>();
+            bullet.OwnerPlayer = Object.InputAuthority;
         });
     }
 

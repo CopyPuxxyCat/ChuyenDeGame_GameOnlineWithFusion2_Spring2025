@@ -1,10 +1,11 @@
 using Fusion;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerHealth : NetworkBehaviour
 {
     public int maxHealth = 100;
-
+    [Networked] public int KillCount { get; private set; }
     [Networked] public int currentHealth { get; private set; }
 
     public delegate void HealthChangedDelegate(int current, int max);
@@ -28,18 +29,26 @@ public class PlayerHealth : NetworkBehaviour
         {
             OnHealthChangedEvent?.Invoke(currentHealth, maxHealth);
             lastHealth = currentHealth;
+            if(currentHealth < 11)
+            {
+                GameManagephoton.instance.LocalPlayer.transform.localPosition = new Vector3(0, 1, 0);
+                currentHealth = 100;
+            }
         }
     }
 
     [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
-    public void RPC_TakeDamage(int damage)
+    public void RPC_TakeDamage(int damage, PlayerRef attacker)
     {
         if (!Object.HasStateAuthority) return; // Chỉ thực hiện trên State Authority
-
+        Debug.Log("atker la: " + attacker);
         currentHealth = Mathf.Max(currentHealth - damage, 0);
         OnHealthChangedEvent?.Invoke(currentHealth, maxHealth); // Cập nhật UI trên máy chủ
         RPC_UpdateHealth(currentHealth); // Gửi cập nhật đến tất cả client
-        Debug.Log($"Player bị bắn! Máu còn lại: {currentHealth}");
+        if(currentHealth < 11)
+        {
+            RPC_AddKill(attacker);
+        }    
     }
 
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
@@ -47,6 +56,42 @@ public class PlayerHealth : NetworkBehaviour
     {
         currentHealth = newHealth;
         OnHealthChangedEvent?.Invoke(currentHealth, maxHealth); // Cập nhật UI trên tất cả client
+    }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void RPC_AddKill(PlayerRef attacker)
+    {
+        NetworkObject attackerObj = GetPlayerByRef(attacker);
+        if (attackerObj != null)
+        {
+            var combat = attackerObj.GetComponent<PlayerHealth>();
+            combat.KillCount++;
+            Debug.Log("kill: " + KillCount);
+            if (attackerObj.HasInputAuthority)
+            {
+                KillUIManager.instance.UpdateKillUI(combat.KillCount);
+            }
+        }
+    }
+
+    private NetworkObject GetPlayerByRef(PlayerRef playerRef)
+    {
+        foreach (var obj in FindObjectsOfType<NetworkObject>())
+        {
+            // Loại trừ các object không phải player
+            if (!obj.GetComponent<PlayerHealth>()) continue;
+
+            Debug.Log($"[CHECK] Object: {obj.name}, InputAuthority: {obj.InputAuthority}");
+
+            if (obj.InputAuthority == playerRef)
+            {
+                Debug.Log($"[FOUND] Found player object for {playerRef}: {obj.name}");
+                return obj;
+            }
+        }
+
+        Debug.LogError($"[ERROR] Không tìm thấy Player có PlayerRef = {playerRef}");
+        return null;
     }
 }
 

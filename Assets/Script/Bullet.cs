@@ -8,6 +8,7 @@ public class Bullet : NetworkBehaviour
     public float lifeTime = 3f;
 
     private Vector3 _direction;
+    [Networked] public PlayerRef OwnerPlayer { get; set; }
 
     public void Initialize(Vector3 direction)
     {
@@ -28,12 +29,14 @@ public class Bullet : NetworkBehaviour
         if (Object.HasStateAuthority && other.CompareTag("Player"))
         {
             PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
-            if (playerHealth != null)
+            if (playerHealth != null && playerHealth.Object.InputAuthority != OwnerPlayer)
             {
-                playerHealth.RPC_TakeDamage(damage);
+                playerHealth.RPC_TakeDamage(damage, OwnerPlayer);
+                Debug.Log("vien dan nay cua: " + OwnerPlayer);
+                DestroyBullet();
             }
 
-            DestroyBullet();
+            
         }
     }
 
