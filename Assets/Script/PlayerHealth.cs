@@ -41,7 +41,6 @@ public class PlayerHealth : NetworkBehaviour
     public void RPC_TakeDamage(int damage, PlayerRef attacker)
     {
         if (!Object.HasStateAuthority) return; // Chỉ thực hiện trên State Authority
-        Debug.Log("atker la: " + attacker);
         currentHealth = Mathf.Max(currentHealth - damage, 0);
         OnHealthChangedEvent?.Invoke(currentHealth, maxHealth); // Cập nhật UI trên máy chủ
         RPC_UpdateHealth(currentHealth); // Gửi cập nhật đến tất cả client
@@ -66,7 +65,7 @@ public class PlayerHealth : NetworkBehaviour
         {
             var combat = attackerObj.GetComponent<PlayerHealth>();
             combat.KillCount++;
-            Debug.Log("kill: " + KillCount);
+            PlayFabStatsManager.playerKillCount++;
             if (attackerObj.HasInputAuthority)
             {
                 KillUIManager.instance.UpdateKillUI(combat.KillCount);
@@ -81,16 +80,16 @@ public class PlayerHealth : NetworkBehaviour
             // Loại trừ các object không phải player
             if (!obj.GetComponent<PlayerHealth>()) continue;
 
-            Debug.Log($"[CHECK] Object: {obj.name}, InputAuthority: {obj.InputAuthority}");
+            //Debug.Log($"[CHECK] Object: {obj.name}, InputAuthority: {obj.InputAuthority}");
 
             if (obj.InputAuthority == playerRef)
             {
-                Debug.Log($"[FOUND] Found player object for {playerRef}: {obj.name}");
+                //Debug.Log($"[FOUND] Found player object for {playerRef}: {obj.name}");
                 return obj;
             }
         }
 
-        Debug.LogError($"[ERROR] Không tìm thấy Player có PlayerRef = {playerRef}");
+        //Debug.LogError($"[ERROR] Không tìm thấy Player có PlayerRef = {playerRef}");
         return null;
     }
 }

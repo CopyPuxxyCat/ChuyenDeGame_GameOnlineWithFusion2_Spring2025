@@ -32,7 +32,6 @@ public class Bullet : NetworkBehaviour
             if (playerHealth != null && playerHealth.Object.InputAuthority != OwnerPlayer)
             {
                 playerHealth.RPC_TakeDamage(damage, OwnerPlayer);
-                Debug.Log("vien dan nay cua: " + OwnerPlayer);
                 DestroyBullet();
             }
 

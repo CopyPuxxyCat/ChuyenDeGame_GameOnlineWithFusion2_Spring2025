@@ -13,7 +13,6 @@ public class KillUIManager : MonoBehaviour
 
     public void UpdateKillUI(int kills)
     {
-        Debug.Log("Update kIll UI duoc goi");
         killText.text =  ($"{kills}");
     }
 }
